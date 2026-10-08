@@ -36,3 +36,15 @@ def get_users_by_organization(
     ).order_by(User.created_at)
 
     return list(db.scalars(statement).all())
+
+def get_user_by_id_and_organization(
+    db: Session,
+    user_id: UUID,
+    organization_id: UUID,
+) -> User | None:
+    statement = select(User).where(
+        User.id == user_id,
+        User.organization_id == organization_id,
+    )
+
+    return db.scalar(statement)
