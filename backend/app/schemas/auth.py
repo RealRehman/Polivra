@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from uuid import UUID
 
 
 class LoginRequest(BaseModel):
@@ -10,3 +11,16 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    organization_id: UUID
+    email: str
+    full_name: str
+    role: str
+    is_active: bool
+
+    model_config = {
+        "from_attributes": True,
+    }

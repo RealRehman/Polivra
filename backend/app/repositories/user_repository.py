@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -9,8 +11,8 @@ def get_user_by_email(
     email: str,
 ) -> User | None:
     statement = select(User).where(User.email == email)
-
     return db.scalar(statement)
+
 
 def get_user_by_email_and_organization(
     db: Session,
@@ -23,3 +25,14 @@ def get_user_by_email_and_organization(
     )
 
     return db.scalar(statement)
+
+
+def get_users_by_organization(
+    db: Session,
+    organization_id: UUID,
+) -> list[User]:
+    statement = select(User).where(
+        User.organization_id == organization_id
+    ).order_by(User.created_at)
+
+    return list(db.scalars(statement).all())
