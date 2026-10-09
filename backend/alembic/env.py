@@ -3,6 +3,8 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
+from app.models import document
+
 from alembic import context
 
 from app.core.config import get_settings
