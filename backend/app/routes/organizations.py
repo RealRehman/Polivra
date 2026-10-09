@@ -9,6 +9,13 @@ from app.models.user import User
 from app.repositories.organization_repository import get_organization_by_id
 from app.security.dependencies import get_current_user
 
+from app.schemas.organization import (
+    OrganizationResponse,
+    OrganizationUpdateRequest,
+)
+from app.security.rbac import require_role
+from app.services.organization_service import update_organization_name
+
 router = APIRouter(prefix="/organizations", tags=["Organizations"])
 
 
@@ -32,3 +39,22 @@ def get_my_organization(
         organization,
         from_attributes=True,
     )
+    
+
+@router.patch("/me", response_model=OrganizationResponse)
+def update_my_organization(
+    update_data: OrganizationUpdateRequest,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+) -> OrganizationResponse:
+    organization = update_organization_name(
+        db,
+        current_user.organization_id,
+        update_data.name,
+    )
+
+    return OrganizationResponse.model_validate(
+        organization,
+        from_attributes=True,
+    )
+

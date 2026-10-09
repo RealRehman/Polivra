@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from pydantic import BaseModel, ConfigDict, Field
 
 class OrganizationResponse(BaseModel):
     id: UUID
@@ -13,3 +14,8 @@ class OrganizationResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class OrganizationUpdateRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=255)
+
+    model_config = ConfigDict(extra="forbid")
