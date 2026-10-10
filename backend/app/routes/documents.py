@@ -17,7 +17,13 @@ from app.database.session import get_db
 from app.models.user import User
 from app.schemas.document import DocumentResponse
 from app.security.dependencies import get_current_user
-from app.services.document_service import get_organization_documents
+from app.services.document_service import (
+    archive_organization_document,
+    get_organization_document,
+    get_organization_documents,
+    publish_organization_document,
+    upload_organization_document,
+)
 
 from app.services.document_service import archive_organization_document
 
@@ -29,6 +35,7 @@ from app.services.document_service import upload_organization_document
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
+
 @router.get("", response_model=list[DocumentResponse])
 def list_documents(
     current_user: User = Depends(get_current_user),
@@ -37,12 +44,14 @@ def list_documents(
     documents = get_organization_documents(
         db,
         current_user.organization_id,
+        published_only=current_user.role != "admin",
     )
 
     return [
         DocumentResponse.model_validate(document, from_attributes=True)
         for document in documents
     ]
+
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)
@@ -55,6 +64,7 @@ def get_document(
         db,
         document_id,
         current_user.organization_id,
+        published_only=current_user.role != "admin",
     )
 
     if document is None:
@@ -101,6 +111,7 @@ def download_document(
         db,
         document_id,
         current_user.organization_id,
+        published_only=current_user.role != "admin",
     )
 
     if document is None:
@@ -133,6 +144,23 @@ def archive_document(
     db: Session = Depends(get_db),
 ) -> DocumentResponse:
     document = archive_organization_document(
+        db,
+        document_id,
+        current_user.organization_id,
+    )
+
+    return DocumentResponse.model_validate(
+        document,
+        from_attributes=True,
+    )
+
+@router.patch("/{document_id}/publish", response_model=DocumentResponse)
+def publish_document(
+    document_id: UUID,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+) -> DocumentResponse:
+    document = publish_organization_document(
         db,
         document_id,
         current_user.organization_id,

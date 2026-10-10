@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from datetime import datetime, timezone
 
-from fastapi import UploadFile
-from app.storage.local_storage import save_document
+from fastapi import HTTPException, UploadFile, status
+
 from app.storage.local_storage import delete_document_file, save_document
 
 from app.models.document import Document
@@ -19,19 +19,28 @@ from app.repositories.document_repository import (
 def get_organization_documents(
     db: Session,
     organization_id: UUID,
+    *,
+    published_only: bool = False,
 ) -> list[Document]:
-    return get_documents_by_organization(db, organization_id)
+    return get_documents_by_organization(
+        db,
+        organization_id,
+        published_only=published_only,
+    )
 
 
 def get_organization_document(
     db: Session,
     document_id: UUID,
     organization_id: UUID,
+    *,
+    published_only: bool = False,
 ) -> Document | None:
     return get_document_by_id_and_organization(
         db,
         document_id,
         organization_id,
+        published_only=published_only,
     )
 
 
@@ -105,4 +114,43 @@ def archive_organization_document(
     db.refresh(document)
 
     return document
+
+
+def publish_organization_document(
+    db: Session,
+    document_id: UUID,
+    organization_id: UUID,
+) -> Document:
+    document = get_document_by_id_and_organization(
+        db,
+        document_id,
+        organization_id,
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if document.archived_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Archived documents cannot be published",
+        )
+
+    if document.status == "published":
+        return document
+
+    document.status = "published"
+
+    try:
+        db.commit()
+        db.refresh(document)
+    except Exception:
+        db.rollback()
+        raise
+
+    return document
+
 
